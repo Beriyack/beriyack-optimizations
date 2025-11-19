@@ -12,6 +12,8 @@ Le plugin vous permet de contrôler les aspects suivants de votre site WordPress
 *   **Désactiver les Emojis** : Supprime les scripts et styles liés aux emojis natifs de WordPress, devenus inutiles sur les navigateurs modernes.
 *   **Désactiver les auto-pings (self-pings)** : Empêche WordPress de créer des notifications dans vos propres commentaires lorsque vous créez un lien d'un article à un autre.
 *   **Supprimer les liens des flux RSS** : Nettoie l'en-tête de votre site en retirant les liens vers les flux RSS, une technologie de moins en moins utilisée.
+*   **Supprimer jQuery Migrate** : Désactive le script de compatibilité `jquery-migrate.js` si votre thème et vos plugins sont modernes, ce qui allège le chargement de vos pages.
+*   **Désactiver les Embeds** : Supprime le script `wp-embed.min.js` et désactive la fonctionnalité qui transforme automatiquement les liens en aperçus intégrés.
 
 ### 🛡️ Optimisations de sécurité
 *   **Désactiver XML-RPC** : Ferme l'accès à l'ancienne API `xmlrpc.php`, une porte d'entrée courante pour les attaques par force brute.

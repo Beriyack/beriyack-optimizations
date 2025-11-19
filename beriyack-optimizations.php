@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Beriyack Optimizations
  * Description:       Plugin d'optimisation pour WordPress. Gère la limitation des révisions, la désactivation des emojis, de XML-RPC et nettoie les scripts.
- * Version:           1.1.0
+ * Version:           1.3.0
  * Author:            Beriyack
  * Author URI:        https://x.com/Beriyack
  * Text Domain:       beriyack-optimizations
@@ -24,13 +24,6 @@ require_once plugin_dir_path( __FILE__ ) . 'includes/settings.php';
  * Initialise les optimisations en fonction des réglages.
  */
 function beriyack_optimizations_init() {
-	// Charge les traductions du plugin.
-	load_plugin_textdomain(
-		'beriyack-optimizations',
-		false,
-		dirname( plugin_basename( __FILE__ ) ) . '/languages/'
-	);
-
 	$options = get_option( 'beriyack_optimizations_settings', array() );
 
 	// --- Optimisations de la base de données ---
@@ -59,6 +52,14 @@ function beriyack_optimizations_init() {
 		remove_action( 'wp_head', 'feed_links', 2 );
 		remove_action( 'wp_head', 'feed_links_extra', 3 );
 	}
+
+	if ( ! empty( $options['remove_jquery_migrate'] ) ) {
+		add_action( 'wp_default_scripts', 'beriyack_optimizations_remove_jquery_migrate' );
+	}
+
+	if ( ! empty( $options['disable_embeds'] ) ) {
+		add_action( 'init', 'beriyack_optimizations_disable_embeds', 9999 );
+	}
 }
 add_action( 'plugins_loaded', 'beriyack_optimizations_init' );
 
@@ -76,20 +77,8 @@ function beriyack_optimizations_disable_emojis_actions() {
 	remove_filter( 'the_content_feed', 'wp_staticize_emoji' );
 	remove_filter( 'comment_text_rss', 'wp_staticize_emoji' );
 	remove_filter( 'wp_mail', 'wp_staticize_emoji_for_email' );
-	add_filter( 'tiny_mce_plugins', 'beriyack_optimizations_disable_emojis_tinymce' );
-	add_filter( 'wp_resource_hints', 'beriyack_optimizations_remove_emoji_dns_prefetch', 10, 2 );
-}
-
-function beriyack_optimizations_disable_emojis_tinymce( $plugins ) {
-	return is_array( $plugins ) ? array_diff( $plugins, array( 'wpemoji' ) ) : array();
-}
-
-function beriyack_optimizations_remove_emoji_dns_prefetch( $urls, $relation_type ) {
-	if ( 'dns-prefetch' === $relation_type ) {
-		$emoji_svg_url = apply_filters( 'emoji_svg_url', 'https://s.w.org/images/core/emoji/14.0.0/svg/' );
-		return array_diff( $urls, array( $emoji_svg_url ) );
-	}
-	return $urls;
+	// Supprime le prefetch DNS pour le domaine des emojis.
+	remove_action( 'wp_head', 'wp_resource_hints', 2 );
 }
 
 /**
@@ -104,4 +93,29 @@ function beriyack_optimizations_disable_self_pings( &$links ) {
 			unset( $links[ $l ] );
 		}
 	}
+}
+
+/**
+ * Supprime le script jQuery Migrate.
+ *
+ * @param WP_Scripts $scripts L'objet WP_Scripts.
+ */
+function beriyack_optimizations_remove_jquery_migrate( $scripts ) {
+	if ( ! is_admin() && isset( $scripts->registered['jquery'] ) ) {
+		$scripts->registered['jquery']->deps = array_diff( $scripts->registered['jquery']->deps, array( 'jquery-migrate' ) );
+	}
+}
+
+/**
+ * Désactive la fonctionnalité d'intégration (Embeds) de WordPress.
+ */
+function beriyack_optimizations_disable_embeds() {
+	// Désinscrit le script wp-embed.
+	wp_deregister_script( 'wp-embed' );
+
+	// Retire les actions liées aux embeds.
+	remove_action( 'wp_head', 'wp_oembed_add_discovery_links' );
+	remove_action( 'wp_head', 'wp_oembed_add_host_js' );
+	remove_filter( 'oembed_dataparse', 'wp_filter_oembed_result', 10 );
+	remove_filter( 'pre_oembed_result', 'wp_filter_pre_oembed_result', 10 );
 }

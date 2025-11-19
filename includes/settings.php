@@ -27,9 +27,44 @@ add_action( 'admin_menu', 'beriyack_optimizations_add_settings_page' );
  * Enregistre les réglages du plugin.
  */
 function beriyack_optimizations_register_settings() {
-	register_setting( 'beriyack_optimizations_group', 'beriyack_optimizations_settings' );
+	register_setting(
+		'beriyack_optimizations_group',
+		'beriyack_optimizations_settings',
+		'beriyack_optimizations_sanitize_settings'
+	);
 }
 add_action( 'admin_init', 'beriyack_optimizations_register_settings' );
+
+/**
+ * Nettoie les réglages avant de les enregistrer dans la base de données.
+ *
+ * @param array $input Les données brutes envoyées par le formulaire.
+ * @return array Les données nettoyées.
+ */
+function beriyack_optimizations_sanitize_settings( $input ) {
+	$sanitized_input = array();
+
+	// Cases à cocher (on vérifie si elles existent, sinon elles ne sont pas incluses).
+	$checkboxes = array(
+		'limit_revisions',
+		'disable_emojis',
+		'disable_self_pings',
+		'remove_feed_links',
+		'remove_jquery_migrate',
+		'disable_embeds',
+		'disable_xmlrpc',
+		'remove_wp_version',
+	);
+
+	foreach ( $checkboxes as $key ) {
+		$sanitized_input[ $key ] = ! empty( $input[ $key ] ) ? 1 : 0;
+	}
+
+	// Champ numérique pour le nombre de révisions.
+	$sanitized_input['revisions_count'] = isset( $input['revisions_count'] ) ? intval( $input['revisions_count'] ) : 5;
+
+	return $sanitized_input;
+}
 
 /**
  * Affiche le contenu de la page de réglages.
@@ -79,6 +114,20 @@ function beriyack_optimizations_render_settings_page() {
 								<?php esc_html_e( 'Supprimer les liens des flux RSS', 'beriyack-optimizations' ); ?>
 							</label>
 							<p class="description"><?php esc_html_e( 'Supprime les liens vers les flux RSS (principal et commentaires) du <head> de votre site.', 'beriyack-optimizations' ); ?></p>
+						</fieldset>
+						<fieldset>
+							<label for="remove_jquery_migrate">
+								<input type="checkbox" id="remove_jquery_migrate" name="beriyack_optimizations_settings[remove_jquery_migrate]" value="1" <?php checked( isset( $options['remove_jquery_migrate'] ), 1 ); ?> />
+								<?php esc_html_e( 'Supprimer jQuery Migrate', 'beriyack-optimizations' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'Supprime le script de compatibilité jQuery Migrate si vos plugins et thèmes sont à jour.', 'beriyack-optimizations' ); ?></p>
+						</fieldset>
+						<fieldset>
+							<label for="disable_embeds">
+								<input type="checkbox" id="disable_embeds" name="beriyack_optimizations_settings[disable_embeds]" value="1" <?php checked( isset( $options['disable_embeds'] ), 1 ); ?> />
+								<?php esc_html_e( 'Désactiver les Embeds', 'beriyack-optimizations' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'Supprime le script wp-embed.min.js et désactive la fonctionnalité d\'intégration automatique des contenus.', 'beriyack-optimizations' ); ?></p>
 						</fieldset>
 					</td>
 				</tr>
