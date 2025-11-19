@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Beriyack Optimizations
  * Description:       Plugin d'optimisation pour WordPress. Gère la limitation des révisions, la désactivation des emojis, de XML-RPC et nettoie les scripts.
- * Version:           1.4.1
+ * Version:           1.4.2
  * Author:            Beriyack
  * Author URI:        https://x.com/Beriyack
  * Text Domain:       beriyack-optimizations
