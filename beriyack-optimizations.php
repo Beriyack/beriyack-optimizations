@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Beriyack Optimizations
  * Description:       Plugin d'optimisation pour WordPress. Gère la limitation des révisions, la désactivation des emojis, de XML-RPC et nettoie les scripts.
- * Version:           1.3.0
+ * Version:           1.4.0
  * Author:            Beriyack
  * Author URI:        https://x.com/Beriyack
  * Text Domain:       beriyack-optimizations
@@ -26,14 +26,19 @@ require_once plugin_dir_path( __FILE__ ) . 'includes/settings.php';
 function beriyack_optimizations_init() {
 	$options = get_option( 'beriyack_optimizations_settings', array() );
 
-	// --- Optimisations de la base de données ---
-	if ( ! empty( $options['limit_revisions'] ) ) {
-		add_filter( 'wp_revisions_to_keep', 'beriyack_optimizations_limit_revisions_number', 10, 1 );
-	}
+	// Applique toujours le filtre pour le nombre de révisions. La valeur est gérée dans la fonction.
+	add_filter( 'wp_revisions_to_keep', 'beriyack_optimizations_limit_revisions_number', 10, 1 );
 
 	// --- Optimisations de performance et de sécurité ---
+
+	// La désactivation de XML-RPC doit se faire le plus tôt possible.
 	if ( ! empty( $options['disable_xmlrpc'] ) ) {
+		// Méthode 1: Le filtre standard de WordPress pour désactiver les fonctionnalités.
 		add_filter( 'xmlrpc_enabled', '__return_false' );
+
+		// Méthode 2: Supprime l'en-tête de pingback pour empêcher la découverte.
+		add_filter( 'wp_headers', function( $headers ) { unset( $headers['X-Pingback'] ); return $headers; } );
+
 	}
 
 	if ( ! empty( $options['disable_emojis'] ) ) {
@@ -44,29 +49,34 @@ function beriyack_optimizations_init() {
 		remove_action( 'wp_head', 'wp_generator' );
 	}
 
-	if ( ! empty( $options['disable_self_pings'] ) ) {
-		add_action( 'pre_ping', 'beriyack_optimizations_disable_self_pings' );
-	}
-
 	if ( ! empty( $options['remove_feed_links'] ) ) {
 		remove_action( 'wp_head', 'feed_links', 2 );
 		remove_action( 'wp_head', 'feed_links_extra', 3 );
 	}
+}
+// On utilise une priorité de 0 pour s'assurer que le filtre XML-RPC est appliqué le plus tôt possible.
+add_action( 'plugins_loaded', 'beriyack_optimizations_init', 0 );
 
-	if ( ! empty( $options['remove_jquery_migrate'] ) ) {
-		add_action( 'wp_default_scripts', 'beriyack_optimizations_remove_jquery_migrate' );
-	}
-
-	if ( ! empty( $options['disable_embeds'] ) ) {
-		add_action( 'init', 'beriyack_optimizations_disable_embeds', 9999 );
+/**
+ * Méthode de blocage agressive pour XML-RPC.
+ * Intercepte l'accès au fichier et arrête l'exécution.
+ */
+$beriyack_options = get_option( 'beriyack_optimizations_settings', array() );
+if ( ! empty( $beriyack_options['disable_xmlrpc'] ) ) {
+	if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
+		header( 'HTTP/1.1 403 Forbidden' );
+		exit( 'Accès à XML-RPC désactivé par l\'administrateur du site.' );
 	}
 }
-add_action( 'plugins_loaded', 'beriyack_optimizations_init' );
 
 function beriyack_optimizations_limit_revisions_number( $num ) {
 	$options = get_option( 'beriyack_optimizations_settings', array() );
-	$revisions_count = isset( $options['revisions_count'] ) ? absint( $options['revisions_count'] ) : 5;
-	return $revisions_count;
+	// Si la valeur est définie dans les options, on l'utilise. Sinon, on ne modifie pas la valeur par défaut de WordPress.
+	if ( isset( $options['revisions_count'] ) ) {
+		return intval( $options['revisions_count'] );
+	}
+	// Si l'option n'a jamais été enregistrée, on ne change rien.
+	return $num;
 }
 
 function beriyack_optimizations_disable_emojis_actions() {
@@ -82,40 +92,15 @@ function beriyack_optimizations_disable_emojis_actions() {
 }
 
 /**
- * Désactive les auto-pings (pingbacks) sur le site.
+ * Ajoute un lien vers la page de réglages directement sur la page des plugins.
  *
- * @param array $links Les liens à vérifier.
+ * @param array $links Les liens d'action existants.
+ * @return array Les liens d'action modifiés.
  */
-function beriyack_optimizations_disable_self_pings( &$links ) {
-	$home = get_option( 'home' );
-	foreach ( $links as $l => $link ) {
-		if ( 0 === strpos( $link, $home ) ) {
-			unset( $links[ $l ] );
-		}
-	}
+function beriyack_optimizations_add_settings_link( $links ) {
+	$settings_link = '<a href="' . admin_url( 'options-general.php?page=beriyack-optimizations' ) . '">' . __( 'Réglages', 'beriyack-optimizations' ) . '</a>';
+	array_unshift( $links, $settings_link );
+	return $links;
 }
-
-/**
- * Supprime le script jQuery Migrate.
- *
- * @param WP_Scripts $scripts L'objet WP_Scripts.
- */
-function beriyack_optimizations_remove_jquery_migrate( $scripts ) {
-	if ( ! is_admin() && isset( $scripts->registered['jquery'] ) ) {
-		$scripts->registered['jquery']->deps = array_diff( $scripts->registered['jquery']->deps, array( 'jquery-migrate' ) );
-	}
-}
-
-/**
- * Désactive la fonctionnalité d'intégration (Embeds) de WordPress.
- */
-function beriyack_optimizations_disable_embeds() {
-	// Désinscrit le script wp-embed.
-	wp_deregister_script( 'wp-embed' );
-
-	// Retire les actions liées aux embeds.
-	remove_action( 'wp_head', 'wp_oembed_add_discovery_links' );
-	remove_action( 'wp_head', 'wp_oembed_add_host_js' );
-	remove_filter( 'oembed_dataparse', 'wp_filter_oembed_result', 10 );
-	remove_filter( 'pre_oembed_result', 'wp_filter_pre_oembed_result', 10 );
-}
+$plugin_basename = plugin_basename( __FILE__ );
+add_filter( "plugin_action_links_{$plugin_basename}", 'beriyack_optimizations_add_settings_link' );
