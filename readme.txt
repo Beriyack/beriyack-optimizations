@@ -4,7 +4,7 @@ Donate link: https://www.buymeacoffee.com/beriyack
 Tags: optimization, performance, security, revisions, speed
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -60,6 +60,9 @@ Ce plugin ne collecte et ne stocke aucune donnée personnelle des visiteurs de v
 
 == Changelog ==
 
+= 1.4.1 =
+* Correction : Préfixage des variables globales pour se conformer aux standards de codage de WordPress et éviter les conflits potentiels.
+
 = 1.4.0 =
 * Amélioration : Simplification de l'interface pour la limitation des révisions.
 * Amélioration : Correction finale et robuste pour la désactivation de XML-RPC.
@@ -85,6 +88,9 @@ Ce plugin ne collecte et ne stocke aucune donnée personnelle des visiteurs de v
 * Lancement initial avec les optimisations de base (limitation des révisions, désactivation des emojis et de XML-RPC).
 
 == Upgrade Notice ==
+
+= 1.4.1 =
+Cette version est une mise à jour de maintenance qui améliore la qualité du code pour une meilleure conformité avec les standards de WordPress.
 
 = 1.4.0 =
 Version de simplification et de stabilisation. Certaines fonctionnalités moins universelles ont été retirées pour améliorer la fiabilité.

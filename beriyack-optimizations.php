@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Beriyack Optimizations
  * Description:       Plugin d'optimisation pour WordPress. Gère la limitation des révisions, la désactivation des emojis, de XML-RPC et nettoie les scripts.
- * Version:           1.4.0
+ * Version:           1.4.1
  * Author:            Beriyack
  * Author URI:        https://x.com/Beriyack
  * Text Domain:       beriyack-optimizations
@@ -61,8 +61,8 @@ add_action( 'plugins_loaded', 'beriyack_optimizations_init', 0 );
  * Méthode de blocage agressive pour XML-RPC.
  * Intercepte l'accès au fichier et arrête l'exécution.
  */
-$beriyack_options = get_option( 'beriyack_optimizations_settings', array() );
-if ( ! empty( $beriyack_options['disable_xmlrpc'] ) ) {
+$beriyack_optimizations_options = get_option( 'beriyack_optimizations_settings', array() );
+if ( ! empty( $beriyack_optimizations_options['disable_xmlrpc'] ) ) {
 	if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
 		header( 'HTTP/1.1 403 Forbidden' );
 		exit( 'Accès à XML-RPC désactivé par l\'administrateur du site.' );
@@ -102,5 +102,5 @@ function beriyack_optimizations_add_settings_link( $links ) {
 	array_unshift( $links, $settings_link );
 	return $links;
 }
-$plugin_basename = plugin_basename( __FILE__ );
-add_filter( "plugin_action_links_{$plugin_basename}", 'beriyack_optimizations_add_settings_link' );
+$beriyack_optimizations_plugin_basename = plugin_basename( __FILE__ );
+add_filter( "plugin_action_links_{$beriyack_optimizations_plugin_basename}", 'beriyack_optimizations_add_settings_link' );
